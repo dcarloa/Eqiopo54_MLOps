@@ -3,7 +3,20 @@ Equipo54_MLOps
 
 Proyecto integrador del equipo 54
 
-Project Organization
+## 📋 Descripción del Proyecto
+
+[Agrega 2-3 párrafos sobre]:
+- ¿Qué problema están resolviendo?
+- ¿Qué tipo de modelo están construyendo? (clasificación/regresión/clustering)
+- ¿Cuál es el objetivo de negocio/académico?
+
+**Ejemplo:**
+> Este proyecto desarrolla un modelo de Machine Learning para predecir [objetivo]. 
+> Utilizamos técnicas de [mencionar técnicas: regresión, clasificación, etc.] sobre 
+> un dataset de [tamaño/fuente] para [resultado esperado].
+
+
+## Project Organization
 ------------
 
     ├── LICENSE
