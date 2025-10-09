@@ -1,9 +1,26 @@
-Equipo54_MLOps
-==============================
+# 🎓 Student Performance Prediction - MLOps Project
 
-Proyecto integrador del equipo 54
+Proyecto de Machine Learning para predecir el rendimiento académico de estudiantes usando Árboles de Decisión.
 
-Project Organization
+**Equipo**: EQUIPO54_MLOps  
+**Modelo**: Decision Tree Classifier
+
+---
+
+## 📋 Tabla de Contenidos
+
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Instalación](#instalación)
+- [Uso Rápido](#uso-rápido)
+- [Pipeline Completo](#pipeline-completo)
+- [Hacer Predicciones](#hacer-predicciones)
+- [Notebooks](#notebooks)
+- [Métricas del Modelo](#métricas-del-modelo)
+
+
+---
+
+## 📁 Estructura del Proyecto
 ------------
 
     ├── LICENSE
