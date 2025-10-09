@@ -113,6 +113,12 @@ dvc push     # upload data to S3
 git push     # commit metadata to Git
 ```
 
+### 6️⃣ Using data
+```bash
+dvc pull   # fetches raw.csv from S3 automatically
+```
+
+
 ---
 
 ## 🧰 Folder & File Conventions
