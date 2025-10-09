@@ -1,0 +1,5 @@
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = s3://my-dvc-study-entry-performance-data
+    region = us-east-1
