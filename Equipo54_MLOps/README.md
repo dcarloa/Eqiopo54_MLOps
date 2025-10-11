@@ -343,40 +343,6 @@ jupyter notebook notebooks/
 
 ---
 
-## 👥 Contribuidores
-
-**EQUIPO54_MLOps**
-
-- ML Engineer: [Tu Nombre]
-- Data Scientist: [Nombre]
-- MLOps Engineer: [Nombre]
-
----
-
-## 📄 Licencia
-
-Este proyecto es para fines educativos.
-
----
-
-## 📞 Contacto
-
-Para preguntas o sugerencias:
-- Email: [tu-email]
-- GitHub: [tu-usuario]
-- LinkedIn: [tu-perfil]
-
----
-
-## 🙏 Agradecimientos
-
-- Dataset: [Fuente del dataset]
-- Herramientas: scikit-learn, pandas, matplotlib
-- Inspiración: MLOps best practices
-
----
-
-**¿Preguntas?** Revisa la sección de [Troubleshooting](#troubleshooting) o abre un issue en GitHub.
 
 
 --------
