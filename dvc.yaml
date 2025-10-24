@@ -1,0 +1,12 @@
+stages:
+  train:
+    cmd: python -m Equipo54_MLOps.src.pipeline.run_pipeline
+    deps:
+      - Equipo54_MLOps/src/pipeline/run_pipeline.py
+      - Equipo54_MLOps/src/pipeline/params.yaml
+      # Note: input features are dynamic. The pipeline will try:
+      # data/processed/student_features.csv and fall back to
+      # Equipo54_MLOps/src/pipeline/data/student_features_dummy.csv if missing.
+    outs:
+      - models/decision_tree.joblib
+      - reports/metrics/metrics.json
