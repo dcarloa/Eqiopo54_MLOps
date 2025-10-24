@@ -1,18 +1,35 @@
-data:
-  raw: src/pipeline/data/student_features_dummy.csv
-  processed: src/data/processed/student_features_processed.csv
-outputs:
-  model: models/dummy_model.pkl
-  metrics: reports/metrics/pipeline_metrics.json
+paths:
+  input: data/processed/student_features.csv  # primary path; pipeline should fall back to src/pipeline/data/student_features_dummy.csv for local testing
+  fallback_input: Equipo54_MLOps/src/pipeline/data/student_features_dummy.csv
+  processed: data/processed/student_features_processed.csv
+  outputs:
+    model_dir: models/
+    metrics_dir: reports/metrics/
+    model_out: models/decision_tree.joblib
+    metrics_out: reports/metrics/metrics.json
+
 target: Performance
+
 features:
-  numeric: [age, hours_study]
-  categorical: [gender, internet_access]
+  numeric:
+    - age
+    - hours_study
+  categorical:
+    - gender
+    - internet_access
+
 split:
   test_size: 0.2
   random_state: 42
+  stratify: true
+
 model:
-  name: random_forest
+  type: DecisionTreeClassifier
   params:
-    n_estimators: 10
     max_depth: 5
+    criterion: gini
+
+validations:
+  min_rows: 10
+  allow_small_dataset: false
+  impute_missing: false

@@ -4,10 +4,12 @@
   "type": "object",
   "properties": {
     "accuracy": {"type": ["number", "null"]},
-    "precision": {"type": ["number", "null"]},
-    "recall": {"type": ["number", "null"]},
-    "f1_score": {"type": ["number", "null"]},
-    "timestamp": {"type": "string", "format": "date-time"}
+    "precision_macro": {"type": ["number", "null"]},
+    "recall_macro": {"type": ["number", "null"]},
+    "f1_macro": {"type": ["number", "null"]},
+    "support_per_class": {"type": "object", "additionalProperties": {"type": "integer"}},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "notes": {"type": ["string", "null"]}
   },
-  "required": ["accuracy", "f1_score", "timestamp"]
+  "required": ["accuracy", "f1_macro", "timestamp"]
 }
