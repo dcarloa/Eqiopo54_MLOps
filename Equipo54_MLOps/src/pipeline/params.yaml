@@ -16,8 +16,3 @@ model:
   params:
     n_estimators: 10
     max_depth: 5
-data:
-  raw: Equipo54_MLOps/src/data/student_entry_performance_modified.csv
-  processed: Equipo54_MLOps/src/data/processed/student_performance_clean.csv
-outputs:
-  metrics: Equipo54_MLOps/reports/metrics/pipeline_metrics.json
