@@ -279,3 +279,35 @@ pip install -r requirements.txt
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+---
+
+## Pipeline — Orquestación mínima
+
+Cómo ejecutar el pipeline (un comando):
+
+- Con Make (si tienes make instalado):
+```
+make run
+```
+
+- En Windows (PowerShell):
+```
+.\run_pipeline.ps1
+```
+
+Requisitos previos:
+- Un entorno Python activo con dependencias instaladas (usa `make setup` o instala `pyyaml`, `pandas`, `scikit-learn`, `joblib`).
+- Datos: si `data/processed/student_features.csv` existe, se usará como entrada real; si no existe, el pipeline usará automáticamente `src/pipeline/data/student_features_dummy.csv` para pruebas locales.
+
+Rutas de salida esperadas:
+- Modelo: `models/decision_tree.joblib`
+- Métricas: `reports/metrics/metrics.json`
+
+Nota:
+- El pipeline está diseñado para NO modificar datos originales ni artefactos versionados por DVC. Para versionar modelos/outputs usa DVC (ej.: añadir `models/decision_tree.joblib` a DVC) en una etapa separada.
+
+Checklist antes de correr:
+- [ ] `requirements.txt` presente y entorno instalado (`make setup`).
+- [ ] `src/pipeline/params.yaml` revisado (paths y target).
+- [ ] Si quieres usar datos reales, colocar `data/processed/student_features.csv`.
