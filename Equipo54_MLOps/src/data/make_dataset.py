@@ -69,7 +69,7 @@ def process_data(input_path, output_path):
     # Eliminar columna mixed_type_col si existe (ruido)
     if 'mixed_type_col' in df.columns:
         logger.info("Eliminando columna 'mixed_type_col'")
-        df = df.drop('mixed_type_col', axis=1)
+        df = df.drop(columns=['mixed_type_col'])
     
     # Manejar valores nulos
     null_count_before = df.isnull().sum().sum()
