@@ -5,6 +5,8 @@ Proyecto de Machine Learning para predecir el rendimiento académico de estudian
 **Equipo**: EQUIPO54_MLOps  
 **Modelo**: Decision Tree Classifier
 
+La idea principal de este proyecto es desarrollar un modelo de Machine Learning de clasificación que prediga el rendimiento académico potencial de un estudiante (Performance) basándose en sus datos demográficos, antecedentes educativos y contexto socioeconómico disponibles al momento de su ingreso. Para lograrlo, se tómo la decisión de utilizar un modelo basado en Árboles de decisión, puesto que la principal ventaja de los árboles de decisión en un dataset puramente categórico es su capacidad para manejar este tipo de variables de forma nativa, eliminando la necesidad de preprocesamiento complejo.
+
 ---
 
 ## 📋 Tabla de Contenidos
