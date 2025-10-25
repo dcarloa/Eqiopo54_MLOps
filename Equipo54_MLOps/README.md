@@ -114,200 +114,62 @@ python src/models/predict_model.py models/ --interactive
 
 ---
 
-## 🔄 Pipeline Completo
+## 🚀 Ejecución del Pipeline
 
-### 1. Procesamiento de Datos
+### **Pipeline Completo (Recomendado)**
+bash
+python src/pipeline/run_pipeline.py
 
-```bash
-python src/data/make_dataset.py \
-    src/data/raw/student_entry_performance_modified.csv \
-    src/data/processed/student_performance_clean.csv
-```
-
-**Lo que hace:**
-- ✅ Limpia y estandariza texto (mayúsculas, espacios)
-- ✅ Normaliza categorías de Performance
-- ✅ Elimina columnas sin valor predictivo
-- ✅ Maneja valores faltantes
-- ✅ Guarda datos limpios
-
-### 2. Entrenamiento del Modelo
-
-```bash
-# Con optimización (recomendado, ~5-10 min)
-python src/models/train_model.py \
-    src/data/processed/student_performance_clean.csv \
-    models/
-
-# Sin optimización (rápido, ~30 seg)
-python src/models/train_model.py \
-    src/data/processed/student_performance_clean.csv \
-    models/ \
-    --no-optimize
-```
-
-**Opciones adicionales:**
-
-```bash
-# Cambiar tamaño del test set
-python src/models/train_model.py src/data/processed/student_performance_clean.csv models/ --test-size 0.3
-
-# Cambiar random state
-python src/models/train_model.py src/data/processed/student_performance_clean.csv models/ --random-state 123
-```
-
-**Lo que genera:**
-- `decision_tree_model.pkl` - Modelo entrenado
-- `label_encoders.pkl` - Encoders para variables categóricas
-- `model_metrics.pkl` - Métricas del modelo (pickle)
-- `model_metrics.json` - Métricas del modelo (JSON legible)
-
-### 3. Hacer Predicciones
-
-#### **Modo Interactivo** (una predicción)
-
-```bash
-python src/models/predict_model.py models/ --interactive
-```
-
-**Ejemplo de interacción:**
-
-```
-Ingresa los datos del estudiante:
-
-Gender
-  Ejemplos válidos: MALE, FEMALE
-  → Gender: MALE
-
-Caste
-  Ejemplos válidos: GENERAL, OBC, SC, ST
-  → Caste: GENERAL
-
-...
-
-📊 RESULTADO DE LA PREDICCIÓN
-=================================
-🎯 Rendimiento Predicho: Excellent
-📈 Confianza: 85.32%
-```
-
-#### **Modo Batch** (múltiples predicciones)
-
-```bash
-python src/models/predict_model.py models/ new_students.csv --output predictions.csv
-```
-
-**El CSV de salida incluirá:**
-- Todas las columnas originales
-- `Predicted_Performance` - Predicción del modelo
-- `Prob_Excellent`, `Prob_Very Good`, `Prob_Good`, `Prob_Average` - Probabilidades
-- `Confidence` - Nivel de confianza de la predicción
+Con optimización:
+bash
+python src/pipeline/run_pipeline.py --optimize
 
 ---
 
-## 📊 Métricas del Modelo
+### **Scripts Individuales (Paso a Paso)**
 
-Ver métricas guardadas:
+#### Paso 1: Limpieza de Datos
+bash
+python src/data/make_dataset.py src/data/raw/student_entry_performance_modified.csv src/data/processed/student_clean.csv
 
-```bash
-cat models/model_metrics.json
-```
+#### Paso 2: Generación de Features
+bash
+python src/features/build_features.py src/data/processed/student_clean.csv src/data/processed/student_features.csv
 
-**Ejemplo de estructura:**
+#### Paso 3: Entrenamiento del Modelo
+bash
+# Sin optimización (rápido)
+python src/models/train_model.py src/data/processed/student_features.csv models/ --no-optimize
 
-```json
-{
-  "train_accuracy": 0.9234,
-  "test_accuracy": 0.8567,
-  "cv_score": 0.8521,
-  "best_params": {
-    "max_depth": 15,
-    "min_samples_split": 20,
-    "min_samples_leaf": 10,
-    "criterion": "gini"
-  },
-  "classification_report": {
-    "Excellent": {
-      "precision": 0.87,
-      "recall": 0.89,
-      "f1-score": 0.88
-    }
-  },
-  "feature_importance_top10": {
-    "Class_XII_Percentage": 0.3245,
-    "Class_ X_Percentage": 0.2891,
-    "coaching": 0.1456
-  }
-}
-```
+# Con optimización (recomendado)
+python src/models/train_model.py src/data/processed/student_features.csv models/
 
-**Features más importantes:**
-1. Class_XII_Percentage - Rendimiento en 12° grado
-2. Class_X_Percentage - Rendimiento en 10° grado
-3. coaching - Acceso a tutorías
+#### Paso 4: Evaluación del Modelo
+bash
+python src/models/evaluate_model.py models/decision_tree_model.pkl models/train_test_split.pkl models/label_encoders.pkl reports/metrics/
 
 ---
 
-## 🔧 Troubleshooting
+### **Todo el Pipeline en Bloque**
+bash
+python src/data/make_dataset.py src/data/raw/student_entry_performance_modified.csv src/data/processed/student_clean.csv
 
-### Error: "Modelo no encontrado"
+python src/features/build_features.py src/data/processed/student_clean.csv src/data/processed/student_features.csv
 
-```bash
-# Entrenar el modelo primero
-python src/models/train_model.py src/data/processed/student_performance_clean.csv models/
-```
+python src/models/train_model.py src/data/processed/student_features.csv models/ --no-optimize
 
-### Error: "Archivo CSV no existe"
-
-```bash
-# Verificar ruta del archivo
-ls src/data/raw/
-
-# Crear carpeta si no existe
-mkdir -p src/data/raw
-mkdir -p src/data/processed
-```
-
-### Error: "Valores no vistos"
-
-El modelo maneja valores nuevos asignándolos a una categoría por defecto. Para mejores resultados, asegúrate de que los datos nuevos usen las mismas categorías que los datos de entrenamiento.
-
-### Error de importación
-
-```bash
-# Reinstalar dependencias
-pip install -r requirements.txt
-
-# Verificar instalación
-python -c "import sklearn, pandas, numpy; print('OK')"
-```
+python src/models/evaluate_model.py models/decision_tree_model.pkl models/train_test_split.pkl models/label_encoders.pkl reports/metrics/
 
 ---
 
-## 🛠️ Uso del Makefile (Opcional)
+## 📊 Archivos Generados
 
-Si tienes `make` instalado:
-
-```bash
-make install    # Instalar dependencias
-make data       # Procesar datos
-make train      # Entrenar modelo
-make predict    # Predicción interactiva
-make all        # Pipeline completo
-make clean      # Limpiar archivos generados
-```
-
----
-
-## 📈 Próximos Pasos (Roadmap)
-
-- [ ] API REST con FastAPI
-- [ ] Dockerización del proyecto
-- [ ] CI/CD con GitHub Actions
-- [ ] Monitoring con MLflow
-- [ ] Dashboard interactivo con Streamlit
-- [ ] Pruebas unitarias con pytest
-- [ ] Modelos ensemble (Random Forest, XGBoost)
+src/data/processed/student_clean.csv - Datos limpios
+src/data/processed/student_features.csv - Features codificadas
+models/decision_tree_model.pkl - Modelo entrenado
+models/label_encoders.pkl - Encoders
+models/train_test_split.pkl - Splits
+reports/metrics/metrics.json - Métricas
 
 ---
 
