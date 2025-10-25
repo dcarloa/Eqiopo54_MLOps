@@ -19,6 +19,15 @@ import argparse
 import logging
 from pathlib import Path
 import os
+import json
+
+# Intentamos usar un loader centralizado `params.py` si está disponible en el mismo
+# directorio que este script. Si no está, caeremos en un fallback que no rompe la
+# ejecución.
+try:
+    import params as params_loader  # type: ignore
+except Exception:
+    params_loader = None
 
 # Configurar logging
 logging.basicConfig(
@@ -43,16 +52,24 @@ class PipelineRunner:
         self.optimize = optimize
         self.test_size = test_size
         self.random_state = random_state
-       
-        # Rutas de datos
-        self.raw_path = 'src/data/raw/student_entry_performance_modified.csv'
-        self.clean_path = 'src/data/processed/student_clean.csv'
-        self.features_path = 'src/data/processed/student_features.csv'
-       
+
+        # Cargar configuración externa (params.yaml) si está presente.
+        cfg: dict = {}
+        if params_loader is not None:
+            try:
+                cfg = params_loader.load_params()
+            except Exception:
+                logging.getLogger(__name__).warning('No se pudo cargar params vía params.py; se usarán defaults')
+
+        # Rutas de datos (CLI tiene prioridad; si no, usar params.yaml; si no, fallback hardcoded)
+        self.raw_path = cfg.get('data', {}).get('raw', 'src/data/raw/student_entry_performance_modified.csv')
+        self.clean_path = cfg.get('data', {}).get('clean', 'src/data/processed/student_clean.csv')
+        self.features_path = cfg.get('data', {}).get('features', 'src/data/processed/student_features.csv')
+
         # Rutas de modelos y métricas
-        self.models_dir = 'models/'
-        self.metrics_dir = 'reports/metrics/'
-        self.encoders_path = 'models/label_encoders.pkl'
+        self.models_dir = cfg.get('output', {}).get('models', 'models/')
+        self.metrics_dir = cfg.get('output', {}).get('metrics', 'reports/metrics/')
+        self.encoders_path = cfg.get('output', {}).get('encoders', 'models/label_encoders.pkl')
    
     def _exists(self, script_path: str, step_name: str) -> bool:
         if not Path(script_path).exists():
