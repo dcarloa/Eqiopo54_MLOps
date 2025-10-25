@@ -16,9 +16,11 @@ Proyecto de Machine Learning para predecir el rendimiento académico de estudian
 - [Hacer Predicciones](#hacer-predicciones)
 - [Métricas del Modelo](#métricas-del-modelo)
 
+
 ---
 
 ## 📁 Estructura del Proyecto
+
 
 ```
 EQUIPO54_MLOps/
