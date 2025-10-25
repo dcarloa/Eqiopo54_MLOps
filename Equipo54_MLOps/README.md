@@ -37,17 +37,17 @@ EQUIPO54_MLOps/
 │       ├── train_model.py               # Entrenamiento
 │       └── predict_model.py             # Predicciones
 │
-├── models/                               # Modelos entrenados
+├── models/                              # Modelos entrenados
 │   ├── decision_tree_model.pkl          # Modelo principal
 │   ├── label_encoders.pkl               # Encoders
 │   ├── model_metrics.pkl                # Métricas (pickle)
 │   └── model_metrics.json               # Métricas (JSON legible)
 │
-├── notebooks/                            # Jupyter notebooks
+├── notebooks/                           # Jupyter notebooks
 │   ├── 01_exploratory_data_analysis.ipynb
 │   └── 02_decision_tree_training.ipynb
 │
-├── requirements.txt                      # Dependencias
+├── requirements.txt                     # Dependencias
 └── README.md                            # Este archivo
 ```
 
