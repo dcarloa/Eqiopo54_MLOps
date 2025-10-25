@@ -1,0 +1,146 @@
+# ====================================================================
+# CONFIGURACIÓN DEL PROYECTO: Student Performance Prediction
+# ====================================================================
+
+# Información del proyecto
+project:
+  name: "Student Performance Prediction"
+  version: "1.0.0"
+  description: "Predicción de rendimiento estudiantil usando Decision Tree"
+  team: "Equipo54_MLOps"
+
+# ====================================================================
+# RUTAS DE DATOS
+# ====================================================================
+data:
+  raw: "data/raw/student_entry_performance_modified.csv"
+  clean: "data/processed/student_clean.csv"
+  features: "data/processed/student_features.csv"
+
+# ====================================================================
+# VARIABLE OBJETIVO
+# ====================================================================
+target:
+  name: "Performance"
+  classes:
+    - "Average"
+    - "Excellent"
+    - "Good"
+    - "Very Good"
+
+# ====================================================================
+# PREPROCESAMIENTO
+# ====================================================================
+preprocessing:
+  # Columnas a eliminar
+  drop_columns:
+    - "mixed_type_col"
+ 
+  # Mapeo de categorías de Performance
+  performance_mapping:
+    EXCELLENT: "Excellent"
+    VG: "Very Good"
+    GOOD: "Good"
+    AVERAGE: "Average"
+ 
+  # Manejo de valores nulos
+  handle_nulls: "drop"  # opciones: drop, impute
+
+# ====================================================================
+# CONFIGURACIÓN DEL MODELO
+# ====================================================================
+model:
+  # Tipo de modelo
+  type: "DecisionTreeClassifier"
+ 
+  # Semilla para reproducibilidad
+  random_state: 42
+ 
+  # División train/test
+  test_size: 0.2
+  stratify: true
+ 
+  # Pesos de clases
+  class_weight: "balanced"
+ 
+  # Parámetros por defecto (cuando se usa --no-optimize)
+  default_params:
+    max_depth: 10
+    min_samples_split: 20
+    min_samples_leaf: 10
+    criterion: "gini"
+ 
+  # Configuración de Grid Search
+  grid_search:
+    cv: 5
+    scoring: "accuracy"
+    n_jobs: -1
+    verbose: 1
+ 
+  # Hiperparámetros para optimización (Grid Search)
+  hyperparameters:
+    max_depth: [5, 10, 15, 20]
+    min_samples_split: [10, 20, 30]
+    min_samples_leaf: [5, 10, 15]
+    criterion: ["gini", "entropy"]
+
+# ====================================================================
+# RUTAS DE SALIDA
+# ====================================================================
+output:
+  models: "models/"
+  metrics: "reports/metrics/"
+  figures: "reports/figures/"
+  encoders: "models/label_encoders.pkl"
+  splits: "models/train_test_split.pkl"
+  model_file: "models/decision_tree_model.pkl"
+
+# ====================================================================
+# CONFIGURACIÓN DE LOGGING
+# ====================================================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+ 
+# ====================================================================
+# MÉTRICAS A CALCULAR
+# ====================================================================
+metrics:
+  classification:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1_score"
+ 
+  # Guardar métricas en estos formatos
+  save_formats:
+    - "json"
+    - "pkl"
+
+# ====================================================================
+# FEATURES DEL MODELO
+# ====================================================================
+features:
+  categorical:
+    - "Gender"
+    - "Caste"
+    - "coaching"
+    - "time"
+    - "Class_ten_education"
+    - "twelve_education"
+    - "medium"
+    - "Class_ X_Percentage"
+    - "Class_XII_Percentage"
+    - "Father_occupation"
+    - "Mother_occupation"
+ 
+  # Encoding method
+  encoding_method: "LabelEncoder"
+
+# ====================================================================
+# EXPERIMENTOS Y TRACKING
+# ====================================================================
+experiments:
+  track_experiments: true
+  save_history: true
+  compare_models: true
