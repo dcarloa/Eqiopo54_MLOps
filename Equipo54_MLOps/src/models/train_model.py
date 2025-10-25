@@ -2,7 +2,7 @@
 Script para entrenar modelo de árbol de decisión
 
 Uso:
-    python src/models/train_model.py data/processed/student_performance_clean.csv models/
+    python src/models/train_model.py data/processed/student_features.csv models/
 """
 
 import pandas as pd
@@ -13,9 +13,6 @@ import logging
 import joblib
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
-import json
 
 # Configurar logging
 logging.basicConfig(
@@ -25,43 +22,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_and_prepare_data(data_path):
+def load_features(data_path):
     """
-    Carga y prepara los datos para entrenamiento
+    Carga features ya procesadas y codificadas
     
     Args:
-        data_path (str): Ruta del archivo CSV procesado
+        data_path (str): Ruta del archivo CSV con features
         
     Returns:
-        tuple: (X, y, label_encoders, le_target, feature_names)
+        tuple: (X, y)
     """
-    logger.info(f"Cargando datos desde: {data_path}")
+    logger.info(f"Cargando features desde: {data_path}")
     df = pd.read_csv(data_path)
-    logger.info(f"Datos cargados: {df.shape}")
+    logger.info(f"Features cargadas: {df.shape[0]} filas, {df.shape[1]} columnas")
     
     # Separar features y target
     X = df.drop('Performance', axis=1)
     y = df['Performance']
     
-    logger.info(f"Features: {X.shape}")
-    logger.info(f"Target: {y.shape}")
+    logger.info(f"X: {X.shape}, y: {y.shape}")
+    logger.info(f"Features: {list(X.columns)}")
     
-    # Codificar variables categóricas
-    logger.info("Codificando variables categóricas...")
-    label_encoders = {}
-    
-    for column in X.columns:
-        le = LabelEncoder()
-        X[column] = le.fit_transform(X[column].astype(str))
-        label_encoders[column] = le
-    
-    # Codificar variable objetivo
-    le_target = LabelEncoder()
-    y_encoded = le_target.fit_transform(y)
-    
-    logger.info(f"Clases objetivo: {le_target.classes_}")
-    
-    return X, y_encoded, label_encoders, le_target, list(X.columns)
+    return X, y
 
 
 def train_model(X_train, y_train, optimize=True):
@@ -118,87 +100,17 @@ def train_model(X_train, y_train, optimize=True):
         return model, None, None
 
 
-def evaluate_model(model, X_train, X_test, y_train, y_test, le_target):
+def save_model_and_splits(model, X_train, X_test, y_train, y_test, output_dir, best_params=None, cv_score=None):
     """
-    Evalúa el modelo en train y test
+    Guarda el modelo y los splits de datos
     
     Args:
         model: Modelo entrenado
-        X_train, X_test: Features
-        y_train, y_test: Target
-        le_target: LabelEncoder del target
-        
-    Returns:
-        dict: Métricas del modelo
-    """
-    logger.info("\n=== EVALUANDO MODELO ===")
-    
-    # Predicciones
-    y_pred_train = model.predict(X_train)
-    y_pred_test = model.predict(X_test)
-    
-    # Métricas
-    train_accuracy = accuracy_score(y_train, y_pred_train)
-    test_accuracy = accuracy_score(y_test, y_pred_test)
-    
-    logger.info(f"Accuracy (Train): {train_accuracy:.4f}")
-    logger.info(f"Accuracy (Test): {test_accuracy:.4f}")
-    
-    # Classification report
-    logger.info("\n=== CLASSIFICATION REPORT (Test) ===")
-    report = classification_report(
-        y_test, 
-        y_pred_test, 
-        target_names=le_target.classes_,
-        output_dict=True
-    )
-    logger.info(classification_report(
-        y_test, 
-        y_pred_test, 
-        target_names=le_target.classes_
-    ))
-    
-    # Matriz de confusión
-    cm = confusion_matrix(y_test, y_pred_test)
-    logger.info(f"\nMatriz de confusión:\n{cm}")
-    
-    # Feature importance
-    feature_importance = pd.DataFrame({
-        'feature': X_train.columns,
-        'importance': model.feature_importances_
-    }).sort_values('importance', ascending=False)
-    
-    logger.info("\n=== TOP 5 CARACTERÍSTICAS MÁS IMPORTANTES ===")
-    for idx, row in feature_importance.head(5).iterrows():
-        logger.info(f"{row['feature']}: {row['importance']:.4f}")
-    
-    metrics = {
-        'train_accuracy': float(train_accuracy),
-        'test_accuracy': float(test_accuracy),
-        'classification_report': report,
-        'confusion_matrix': cm.tolist(),
-        'feature_importance': feature_importance.to_dict('records')
-    }
-    
-    return metrics
-
-
-def save_artifacts(model, label_encoders, le_target, feature_names, metrics, 
-                   best_params, cv_score, output_dir):
-    """
-    Guarda modelo y artefactos
-    
-    Args:
-        model: Modelo entrenado
-        label_encoders: Encoders de features
-        le_target: Encoder del target
-        feature_names: Nombres de las features
-        metrics: Métricas del modelo
-        best_params: Mejores parámetros (si GridSearch)
-        cv_score: Score de CV (si GridSearch)
+        X_train, X_test, y_train, y_test: Datos de entrenamiento y prueba
         output_dir: Directorio de salida
+        best_params: Mejores parámetros del GridSearch (opcional)
+        cv_score: Score de validación cruzada (opcional)
     """
-    # Crear directorio si no existe
     os.makedirs(output_dir, exist_ok=True)
     
     # Guardar modelo
@@ -206,38 +118,24 @@ def save_artifacts(model, label_encoders, le_target, feature_names, metrics,
     joblib.dump(model, model_path)
     logger.info(f"✅ Modelo guardado en: {model_path}")
     
-    # Guardar encoders
-    encoders_path = os.path.join(output_dir, 'label_encoders.pkl')
+    # Guardar splits para evaluate_model.py
+    splits_path = os.path.join(output_dir, 'train_test_split.pkl')
     joblib.dump({
-        'feature_encoders': label_encoders,
-        'target_encoder': le_target,
-        'feature_names': feature_names
-    }, encoders_path)
-    logger.info(f"✅ Encoders guardados en: {encoders_path}")
+        'X_train': X_train,
+        'X_test': X_test,
+        'y_train': y_train,
+        'y_test': y_test
+    }, splits_path)
+    logger.info(f"✅ Train/test splits guardados en: {splits_path}")
     
-    # Agregar parámetros a métricas
-    if best_params:
-        metrics['best_params'] = best_params
-        metrics['cv_score'] = float(cv_score)
-    
-    # Guardar métricas
-    metrics_path = os.path.join(output_dir, 'model_metrics.pkl')
-    joblib.dump(metrics, metrics_path)
-    logger.info(f"✅ Métricas guardadas en: {metrics_path}")
-    
-    # Guardar métricas también en JSON (más legible)
-    metrics_json = metrics.copy()
-    # Convertir feature_importance a formato más simple para JSON
-    metrics_json['feature_importance_top10'] = {
-        row['feature']: row['importance'] 
-        for row in metrics['feature_importance'][:10]
-    }
-    del metrics_json['feature_importance']
-    
-    metrics_json_path = os.path.join(output_dir, 'model_metrics.json')
-    with open(metrics_json_path, 'w') as f:
-        json.dump(metrics_json, f, indent=2)
-    logger.info(f"✅ Métricas JSON guardadas en: {metrics_json_path}")
+    # Guardar parámetros del modelo (opcional)
+    if best_params is not None:
+        params_path = os.path.join(output_dir, 'model_params.pkl')
+        joblib.dump({
+            'best_params': best_params,
+            'cv_score': cv_score
+        }, params_path)
+        logger.info(f"✅ Parámetros guardados en: {params_path}")
 
 
 def main():
@@ -248,12 +146,12 @@ def main():
     parser.add_argument(
         'data_path',
         type=str,
-        help='Ruta del archivo CSV procesado'
+        help='Ruta del archivo CSV con features procesadas'
     )
     parser.add_argument(
         'output_dir',
         type=str,
-        help='Directorio donde guardar el modelo y artefactos'
+        help='Directorio donde guardar el modelo'
     )
     parser.add_argument(
         '--no-optimize',
@@ -275,7 +173,6 @@ def main():
     
     args = parser.parse_args()
     
-    # Verificar que el archivo existe
     if not os.path.exists(args.data_path):
         logger.error(f"El archivo {args.data_path} no existe")
         return
@@ -284,8 +181,8 @@ def main():
     logger.info("🚀 INICIANDO ENTRENAMIENTO DEL MODELO")
     logger.info("=" * 60)
     
-    # 1. Cargar y preparar datos
-    X, y, label_encoders, le_target, feature_names = load_and_prepare_data(args.data_path)
+    # 1. Cargar features
+    X, y = load_features(args.data_path)
     
     # 2. Split train/test
     logger.info(f"\nDividiendo datos (test_size={args.test_size})...")
@@ -301,25 +198,17 @@ def main():
     optimize = not args.no_optimize
     model, best_params, cv_score = train_model(X_train, y_train, optimize=optimize)
     
-    # 4. Evaluar modelo
-    metrics = evaluate_model(model, X_train, X_test, y_train, y_test, le_target)
-    
-    # 5. Guardar artefactos
-    save_artifacts(
-        model, label_encoders, le_target, feature_names,
-        metrics, best_params, cv_score, args.output_dir
-    )
+    # 4. Guardar modelo y splits
+    save_model_and_splits(model, X_train, X_test, y_train, y_test, 
+                          args.output_dir, best_params, cv_score)
     
     # Resumen final
     logger.info("\n" + "=" * 60)
-    logger.info("🎯 RESUMEN FINAL")
+    logger.info("✅ ENTRENAMIENTO COMPLETADO EXITOSAMENTE")
     logger.info("=" * 60)
-    logger.info(f"Accuracy (Train): {metrics['train_accuracy']:.4f}")
-    logger.info(f"Accuracy (Test): {metrics['test_accuracy']:.4f}")
-    if best_params:
-        logger.info(f"CV Score: {cv_score:.4f}")
-    logger.info("\n✅ Entrenamiento completado exitosamente")
-    logger.info("=" * 60)
+    logger.info(f"Modelo guardado en: {args.output_dir}")
+    logger.info("Para evaluar el modelo, ejecuta:")
+    logger.info(f"  python src/models/evaluate_model.py {args.output_dir}/decision_tree_model.pkl {args.output_dir}/train_test_split.pkl models/label_encoders.pkl reports/metrics/")
 
 
 if __name__ == '__main__':
