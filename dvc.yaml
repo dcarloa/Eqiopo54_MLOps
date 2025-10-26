@@ -1,0 +1,80 @@
+stages:
+  process_data:
+    cmd: > 
+      python Equipo54_MLOps/src/data/make_dataset.py 
+      Equipo54_MLOps/src/data/raw/student_entry_performance_modified.csv
+      Equipo54_MLOps/src/data/processed/student_clean.csv
+    deps:
+      - Equipo54_MLOps/src/data/make_dataset.py
+      - Equipo54_MLOps/src/data/raw/student_entry_performance_modified.csv
+    outs:
+      - Equipo54_MLOps/src/data/processed/student_clean.csv
+
+  build_features:
+    cmd: >
+      python Equipo54_MLOps/src/features/build_features.py
+      Equipo54_MLOps/src/data/processed/student_clean.csv
+      Equipo54_MLOps/src/data/processed/student_features.csv
+      --encoders-path Equipo54_MLOps/models/label_encoders.pkl
+
+    deps:
+      - Equipo54_MLOps/src/features/build_features.py
+      - Equipo54_MLOps/src/data/processed/student_clean.csv
+    outs:
+      - Equipo54_MLOps/src/data/processed/student_features.csv
+      - Equipo54_MLOps/models/label_encoders.pkl
+
+  train:
+    cmd: > 
+      python Equipo54_MLOps/src/models/train_model.py 
+      Equipo54_MLOps/src/data/processed/student_features.csv 
+      Equipo54_MLOps/models
+    deps:
+      - Equipo54_MLOps/src/models/train_model.py
+      - Equipo54_MLOps/src/data/processed/student_features.csv
+    params:
+      - train.test_size
+      - train.random_state
+      - train.optimize
+      - model.max_depth
+      - model.min_samples_split
+      - model.min_samples_leaf
+      - model.criterion
+      - model.class_weight
+      - model.param_grid
+      - model.grid_search
+    outs:
+      - Equipo54_MLOps/models/decision_tree_model.pkl
+      - Equipo54_MLOps/models/train_test_split.pkl
+      - Equipo54_MLOps/models/model_params.pkl
+
+  evaluate:
+    cmd: >
+      python Equipo54_MLOps/src/models/evaluate_model.py 
+      Equipo54_MLOps/models/decision_tree_model.pkl
+      Equipo54_MLOps/models/train_test_split.pkl
+      Equipo54_MLOps/models/label_encoders.pkl
+      Equipo54_MLOps/reports/metrics/
+    deps:
+      - Equipo54_MLOps/src/models/evaluate_model.py
+      - Equipo54_MLOps/models/decision_tree_model.pkl
+      - Equipo54_MLOps/models/train_test_split.pkl
+      - Equipo54_MLOps/models/label_encoders.pkl
+    outs:
+      - Equipo54_MLOps/reports/metrics/metrics.pkl
+    metrics:
+      - Equipo54_MLOps/reports/metrics/metrics.json:
+          cache: true
+
+  predict:
+    cmd: > 
+      python Equipo54_MLOps/src/models/predict_model.py 
+      Equipo54_MLOps/models/ 
+      Equipo54_MLOps/src/data/processed/student_features.csv 
+      --output Equipo54_MLOps/reports/predictions.csv
+    deps:
+      - Equipo54_MLOps/src/models/predict_model.py
+      - Equipo54_MLOps/models/
+      - Equipo54_MLOps/src/data/processed/student_features.csv
+    outs:
+      - Equipo54_MLOps/reports/predictions.csv

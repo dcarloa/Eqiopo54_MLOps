@@ -1,0 +1,26 @@
+# params.yaml
+train:
+  test_size: 0.2
+  random_state: 42
+  optimize: true
+
+model:
+  # Default parameters (used when optimize=false)
+  max_depth: 10
+  min_samples_split: 20
+  min_samples_leaf: 10
+  criterion: "gini"
+  class_weight: "balanced"
+
+  # GridSearch parameters (used when optimize=true)
+  param_grid:
+    max_depth: [5, 10, 15, 20]
+    min_samples_split: [10, 20, 30]
+    min_samples_leaf: [5, 10, 15]
+    criterion: ["gini", "entropy"]
+
+  grid_search:
+    cv: 5
+    scoring: "accuracy"
+    n_jobs: -1
+    verbose: 1

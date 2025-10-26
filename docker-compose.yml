@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  mlops-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./.git:/app/.git
+      - ./Equipo54_MLOps:/app
+      - ./.dvc:/app/.dvc
+    command: >
+      bash -c "
+        ./scripts/setup_aws.sh &&
+        dvc pull &&
+        dvc repro &&
+        dvc push &&
+        echo 'Pipeline finished. Check for changes in dvc.lock and commit them.'
+      "
