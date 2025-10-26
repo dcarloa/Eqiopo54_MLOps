@@ -1,0 +1,49 @@
+#name: DVC Pipeline with Docker
+#
+#on:
+#  push:
+#    branches:
+#      - main
+#
+#jobs:
+#  run-pipeline:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#
+#      - name: Build Docker Image
+#        run: docker build -t mlops-pipeline .
+#
+#      - name: Create .env file from Secrets
+#        env:
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#        run: |
+#          echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" > .env
+#          echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> .env
+#          echo "CI .env file created."
+#
+#      - name: Run DVC Pipeline in Docker
+#        run: |
+#          docker run \
+#            --env-file .env \
+#            -v ./.git:/app/.git \
+#            mlops-pipeline \
+#            /bin/bash -c "
+#              # 1. Configure AWS and DVC
+#              ./scripts/setup_aws.sh
+#
+#              # 2. Reproduce Pipeline
+#              dvc pull
+#              dvc repro
+#              dvc push
+#
+#              # 3. Commit and Push dvc.lock
+#              git config --global user.name 'GitHub Actions Bot'
+#              git config --global user.email 'actions-bot@github.com'
+#              git config --global --add safe.directory /app
+#              git add dvc.lock
+#              git commit -m 'Update dvc.lock and metrics' || echo 'No changes to commit'
+#              git push
+#            "

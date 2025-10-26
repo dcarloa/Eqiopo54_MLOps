@@ -1,0 +1,149 @@
+schema: '2.0'
+stages:
+  process_data:
+    cmd: "python Equipo54_MLOps/src/data/make_dataset.py  Equipo54_MLOps/src/data/raw/student_entry_performance_modified.csv
+      Equipo54_MLOps/src/data/processed/student_clean.csv\n"
+    deps:
+    - path: Equipo54_MLOps/src/data/make_dataset.py
+      hash: md5
+      md5: a8e5a8ef425b21879887f5662caba48d
+      size: 3781
+    - path: Equipo54_MLOps/src/data/raw/student_entry_performance_modified.csv
+      hash: md5
+      md5: b91baf83958108d7dacf1b3c5798cb4d
+      size: 57818
+    outs:
+    - path: Equipo54_MLOps/src/data/processed/student_clean.csv
+      hash: md5
+      md5: 7f7c7eec4bab0ae734b2f0a8849ef981
+      size: 50928
+  build_features:
+    cmd: "python Equipo54_MLOps/src/features/build_features.py Equipo54_MLOps/src/data/processed/student_clean.csv
+      Equipo54_MLOps/src/data/processed/student_features.csv --encoders-path Equipo54_MLOps/models/label_encoders.pkl\n"
+    deps:
+    - path: Equipo54_MLOps/src/data/processed/student_clean.csv
+      hash: md5
+      md5: 7f7c7eec4bab0ae734b2f0a8849ef981
+      size: 50928
+    - path: Equipo54_MLOps/src/features/build_features.py
+      hash: md5
+      md5: 96971e0383af1638cb4ddacfec78a59f
+      size: 3879
+    outs:
+    - path: Equipo54_MLOps/models/label_encoders.pkl
+      hash: md5
+      md5: 2972e7d4b008c483041f333ad47d81c7
+      size: 3564
+    - path: Equipo54_MLOps/src/data/processed/student_features.csv
+      hash: md5
+      md5: b99a4525402065eb2bf085123bfeac11
+      size: 15411
+  train:
+    cmd: "python Equipo54_MLOps/src/models/train_model.py  Equipo54_MLOps/src/data/processed/student_features.csv\
+      \  Equipo54_MLOps/models\n"
+    deps:
+    - path: Equipo54_MLOps/src/data/processed/student_features.csv
+      hash: md5
+      md5: b99a4525402065eb2bf085123bfeac11
+      size: 15411
+    - path: Equipo54_MLOps/src/models/train_model.py
+      hash: md5
+      md5: 4785e9ba8fc1c6e843dff0517f8c83fc
+      size: 6742
+    params:
+      params.yaml:
+        model.class_weight: balanced
+        model.criterion: gini
+        model.grid_search:
+          cv: 5
+          scoring: accuracy
+          n_jobs: -1
+          verbose: 1
+        model.max_depth: 10
+        model.min_samples_leaf: 10
+        model.min_samples_split: 20
+        model.param_grid:
+          max_depth:
+          - 5
+          - 10
+          - 15
+          - 20
+          min_samples_split:
+          - 10
+          - 20
+          - 30
+          min_samples_leaf:
+          - 5
+          - 10
+          - 15
+          criterion:
+          - gini
+          - entropy
+        train.optimize: true
+        train.random_state: 42
+        train.test_size: 0.2
+    outs:
+    - path: Equipo54_MLOps/models/decision_tree_model.pkl
+      hash: md5
+      md5: 29737c4667558017f2f640a723caae71
+      size: 5657
+    - path: Equipo54_MLOps/models/model_params.pkl
+      hash: md5
+      md5: 5f0697c88b029ce608e2b30851fcad24
+      size: 229
+    - path: Equipo54_MLOps/models/train_test_split.pkl
+      hash: md5
+      md5: 83fc764c9a7d22bf6dfe2ddc804632ce
+      size: 80154
+  evaluate:
+    cmd: "python Equipo54_MLOps/src/models/evaluate_model.py  Equipo54_MLOps/models/decision_tree_model.pkl
+      Equipo54_MLOps/models/train_test_split.pkl Equipo54_MLOps/models/label_encoders.pkl
+      Equipo54_MLOps/reports/metrics/\n"
+    deps:
+    - path: Equipo54_MLOps/models/decision_tree_model.pkl
+      hash: md5
+      md5: 29737c4667558017f2f640a723caae71
+      size: 5657
+    - path: Equipo54_MLOps/models/label_encoders.pkl
+      hash: md5
+      md5: 2972e7d4b008c483041f333ad47d81c7
+      size: 3564
+    - path: Equipo54_MLOps/models/train_test_split.pkl
+      hash: md5
+      md5: 83fc764c9a7d22bf6dfe2ddc804632ce
+      size: 80154
+    - path: Equipo54_MLOps/src/models/evaluate_model.py
+      hash: md5
+      md5: 61fd30ad4497ff2924958aa7eb2c87ce
+      size: 6573
+    outs:
+    - path: Equipo54_MLOps/reports/metrics/metrics.json
+      hash: md5
+      md5: 292cf2bbb2e3f1d42e0c5660cc68dc35
+      size: 1874
+    - path: Equipo54_MLOps/reports/metrics/metrics.pkl
+      hash: md5
+      md5: f48aa4ee75881735d84962981c4d2378
+      size: 977
+  predict:
+    cmd: "python Equipo54_MLOps/src/models/predict_model.py  Equipo54_MLOps/models/\
+      \  Equipo54_MLOps/src/data/processed/student_features.csv  --output Equipo54_MLOps/reports/predictions.csv\n"
+    deps:
+    - path: Equipo54_MLOps/models/
+      hash: md5
+      md5: d751713988987e9331980363e24189ce.dir
+      size: 0
+      nfiles: 0
+    - path: Equipo54_MLOps/src/data/processed/student_features.csv
+      hash: md5
+      md5: b99a4525402065eb2bf085123bfeac11
+      size: 15411
+    - path: Equipo54_MLOps/src/models/predict_model.py
+      hash: md5
+      md5: e3cf83c00034e55c96e675f5e596e883
+      size: 10716
+    outs:
+    - path: Equipo54_MLOps/reports/predictions.csv
+      hash: md5
+      md5: d96ee514e1300d64ce4f98ca36d01087
+      size: 72837
