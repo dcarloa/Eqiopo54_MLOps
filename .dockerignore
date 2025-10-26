@@ -1,0 +1,25 @@
+# .dockerignore
+.git/
+.github/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.DS_Store
+.dvc/tmp/
+.dvc/cache/
+*.pkl
+Equipo54_MLOps/reports/metrics/metrics.json
