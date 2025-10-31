@@ -1,0 +1,81 @@
+{
+  "train_accuracy": 0.5901639344262295,
+  "test_accuracy": 0.39344262295081966,
+  "classification_report": {
+    "Average": {
+      "precision": 0.65,
+      "recall": 0.9285714285714286,
+      "f1-score": 0.7647058823529411,
+      "support": 14.0
+    },
+    "Excellent": {
+      "precision": 0.25,
+      "recall": 0.3,
+      "f1-score": 0.2727272727272727,
+      "support": 10.0
+    },
+    "Good": {
+      "precision": 0.2857142857142857,
+      "recall": 0.21052631578947367,
+      "f1-score": 0.24242424242424243,
+      "support": 19.0
+    },
+    "Very Good": {
+      "precision": 0.26666666666666666,
+      "recall": 0.2222222222222222,
+      "f1-score": 0.24242424242424243,
+      "support": 18.0
+    },
+    "accuracy": 0.39344262295081966,
+    "macro avg": {
+      "precision": 0.3630952380952381,
+      "recall": 0.4153299916457811,
+      "f1-score": 0.3805704099821747,
+      "support": 61.0
+    },
+    "weighted avg": {
+      "precision": 0.35784543325526935,
+      "recall": 0.39344262295081966,
+      "f1-score": 0.36725986967067004,
+      "support": 61.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      13,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      3,
+      3,
+      4
+    ],
+    [
+      6,
+      3,
+      4,
+      6
+    ],
+    [
+      1,
+      6,
+      7,
+      4
+    ]
+  ],
+  "feature_importance_top10": {
+    "Caste": 0.6353716729985139,
+    "coaching": 0.06959988532216453,
+    "Class_XII_Percentage": 0.052297055404024406,
+    "time": 0.04894010384711903,
+    "Gender": 0.048458554508082514,
+    "Mother_occupation": 0.046568424019515844,
+    "Father_occupation": 0.04443677004770971,
+    "medium": 0.029510426990690567,
+    "Class_ten_education": 0.01348796471010679,
+    "twelve_education": 0.011329142152072725
+  }
+}

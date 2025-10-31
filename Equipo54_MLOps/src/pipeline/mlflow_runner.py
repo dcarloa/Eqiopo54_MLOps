@@ -1,4 +1,4 @@
-# src/pipeline/mlflow_runner.py
+﻿# src/pipeline/mlflow_runner.py
 import json
 import subprocess
 from pathlib import Path
@@ -10,14 +10,12 @@ import argparse
 # --- Config MLflow (ajusta si usas server remoto) ---
 DEFAULT_TRACKING_URI = "http://127.0.0.1:5000"
 DEFAULT_EXPERIMENT = "MLFlow_StudentsExperiment"
-REGISTERED_MODEL_NAME = "student-performance-dt"  # opcional: cámbialo o deja None
+REGISTERED_MODEL_NAME = "student-performance-dt"
 
 # --- Rutas del proyecto (coherentes con tu pipeline) ---
 ROOT = Path(__file__).resolve().parents[2]  # .../Equipo54_MLOps
-MODELS_DIR = ROOT / "models"
-METRICS_JSON = MODELS_DIR / "model_metrics.json"
-MODEL_PKL = MODELS_DIR / "decision_tree_model.pkl"
-PARAMS_YAML = ROOT / "src" / "pipeline" / "params.yaml"  # ajusta si lo moviste
+MODELS_DIR = ROOT / "models" / "latest"  # Carpeta fija para artefactos
+PARAMS_YAML = ROOT / "src" / "pipeline" / "params.yaml"
 
 def run_pipeline(optimize: bool = False, start_from: int = 1, stop_at: int = 3):
     cmd = [
@@ -29,7 +27,7 @@ def run_pipeline(optimize: bool = False, start_from: int = 1, stop_at: int = 3):
     if optimize:
         cmd.append("--optimize")
 
-    print(f"➡️ Ejecutando pipeline: {' '.join(cmd)}")
+    print(f" Ejecutando pipeline: {' '.join(cmd)}")
     # Capturamos salida para dejarla como artefacto si quieres
     res = subprocess.run(cmd, capture_output=True, text=True)
     print(res.stdout)
@@ -54,28 +52,34 @@ def main():
         # 1) Ejecutar pipeline (1→3; la evaluación ya vive dentro de train_model.py)
         run_pipeline(optimize=args.optimize, start_from=1, stop_at=3)
 
-        # 2) Log de artefactos “crudos”: params y métricas
+        # 2) Usar directorio fijo models/latest/ para artefactos
+        print(f"📂 Usando artefactos desde: {MODELS_DIR}")
+
+        metrics_json = MODELS_DIR / "model_metrics.json"
+        model_pkl = MODELS_DIR / "decision_tree_model.pkl"
+
+        # 3) Log de artefactos "crudos": params y métricas
         if PARAMS_YAML.exists():
             mlflow.log_artifact(str(PARAMS_YAML), artifact_path="config")
         else:
-            print(f"⚠️ No encontrado: {PARAMS_YAML}")
+            print(f" No encontrado: {PARAMS_YAML}")
 
-        if METRICS_JSON.exists():
-            # Registra métricas “clave” como mlflow.log_metric
-            with open(METRICS_JSON, "r", encoding="utf-8") as f:
+        if metrics_json.exists():
+            # Registra métricas "clave" como mlflow.log_metric
+            with open(metrics_json, "r", encoding="utf-8") as f:
                 metrics = json.load(f)
             # Escoge llaves estándar si existen
             for k in ("train_accuracy", "test_accuracy", "f1_macro", "accuracy"):
                 if k in metrics:
                     mlflow.log_metric(k, float(metrics[k]))
             # Sube el archivo completo como artefacto
-            mlflow.log_artifact(str(METRICS_JSON), artifact_path="metrics")
+            mlflow.log_artifact(str(metrics_json), artifact_path="metrics")
         else:
-            print(f"⚠️ No encontrado: {METRICS_JSON}")
+            print(f" No encontrado: {metrics_json}")
 
-        # 3) Log del modelo
-        if MODEL_PKL.exists():
-            model_obj = joblib.load(MODEL_PKL)
+        # 4) Log del modelo
+        if model_pkl.exists():
+            model_obj = joblib.load(model_pkl)
             # Nota: tu joblib guarda SOLO el estimador o incluye más? (en tu caso, DecisionTree puro)
             # Si en el futuro guardas dicts, ajusta a model_obj['model'].
             registered_name = None if args.no_register else REGISTERED_MODEL_NAME
@@ -84,12 +88,12 @@ def main():
                 artifact_path="model",
                 registered_model_name=registered_name
             )
-            print(f"✅ Modelo registrado/loggeado: {model_info.model_uri}")
+            print(f" Modelo registrado/loggeado: {model_info.model_uri}")
         else:
-            print(f"⚠️ No encontrado: {MODEL_PKL}")
+            print(f" No encontrado: {model_pkl}")
 
-        # 4) Params del entrenamiento (opcionales)
-        # Si quieres también “parametrizar” lo corrido:
+        # 5) Params del entrenamiento (opcionales)
+        # Si quieres también "parametrizar" lo corrido:
         mlflow.log_param("optimize", args.optimize)
         mlflow.log_param("pipeline_steps", "1-3 (train incluye eval)")
 

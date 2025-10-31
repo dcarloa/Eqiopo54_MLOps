@@ -16,6 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 import json
+import yaml
 
 # Configurar logging
 logging.basicConfig(
@@ -64,57 +65,73 @@ def load_and_prepare_data(data_path):
     return X, y_encoded, label_encoders, le_target, list(X.columns)
 
 
-def train_model(X_train, y_train, optimize=True):
+def train_model(X_train, y_train, optimize=True, cfg=None, random_state=42):
     """
-    Entrena el modelo de árbol de decisión
-    
-    Args:
-        X_train: Features de entrenamiento
-        y_train: Target de entrenamiento
-        optimize (bool): Si True, realiza GridSearch
-        
-    Returns:
-        tuple: (modelo, best_params, cv_score)
+    Entrena un DecisionTreeClassifier leyendo hiperparámetros desde YAML (cfg) si existe.
+    Retorna: (modelo, best_params, cv_score)
     """
+    cfg = cfg or {}
+    model_cfg = cfg.get('model', {})
+
+    class_weight = model_cfg.get('class_weight', 'balanced')
+
     if optimize:
-        logger.info("🔍 Optimizando hiperparámetros con GridSearchCV...")
-        
-        param_grid = {
+        logger.info("🔍 Optimizando hiperparámetros con GridSearchCV (desde YAML si existe)...")
+
+        # Estimador base con random_state y class_weight del YAML
+        base_est = DecisionTreeClassifier(
+            random_state=model_cfg.get('random_state', random_state),
+            class_weight=class_weight
+        )
+
+        # Param grid desde YAML o fallback
+        param_grid = model_cfg.get('hyperparameters', {
             'max_depth': [5, 10, 15, 20],
             'min_samples_split': [10, 20, 30],
             'min_samples_leaf': [5, 10, 15],
             'criterion': ['gini', 'entropy']
-        }
-        
+        })
+
+        gs_cfg = model_cfg.get('grid_search', {})
+        cv = gs_cfg.get('cv', 5)
+        scoring = gs_cfg.get('scoring', 'accuracy')
+        n_jobs = gs_cfg.get('n_jobs', -1)
+        verbose = gs_cfg.get('verbose', 1)
+
+        logger.info(f"[CFG] param_grid={param_grid}, cv={cv}, scoring={scoring}, n_jobs={n_jobs}, verbose={verbose}")
+
         grid_search = GridSearchCV(
-            DecisionTreeClassifier(random_state=42, class_weight='balanced'),
-            param_grid,
-            cv=5,
-            scoring='accuracy',
-            n_jobs=-1,
-            verbose=1
+            estimator=base_est,
+            param_grid=param_grid,
+            cv=cv,
+            scoring=scoring,
+            n_jobs=n_jobs,
+            verbose=verbose
         )
-        
         grid_search.fit(X_train, y_train)
-        
+
         logger.info(f"✅ Mejor CV Score: {grid_search.best_score_:.4f}")
         logger.info(f"✅ Mejores parámetros: {grid_search.best_params_}")
-        
         return grid_search.best_estimator_, grid_search.best_params_, grid_search.best_score_
-    
+
     else:
-        logger.info("Entrenando modelo con parámetros por defecto...")
-        
+        logger.info("Entrenando modelo con parámetros por defecto (desde YAML si existe)...")
+
+        default_params = model_cfg.get('default_params', {
+            "max_depth": 10,
+            "min_samples_split": 20,
+            "min_samples_leaf": 10,
+            "criterion": "gini"
+        })
+
+        logger.info(f"[CFG] default_params={default_params}, class_weight={class_weight}, random_state={model_cfg.get('random_state', random_state)}")
+
         model = DecisionTreeClassifier(
-            random_state=42,
-            max_depth=10,
-            min_samples_split=20,
-            min_samples_leaf=10,
-            class_weight='balanced'
+            random_state=model_cfg.get('random_state', random_state),
+            class_weight=class_weight,
+            **default_params
         )
-        
         model.fit(X_train, y_train)
-        
         return model, None, None
 
 
@@ -246,6 +263,12 @@ def main():
         description='Entrenar modelo de árbol de decisión'
     )
     parser.add_argument(
+        '--config',
+        type=str,
+        default='src/pipeline/params.yaml',
+        help='Ruta al params.yaml'
+    )
+    parser.add_argument(
         'data_path',
         type=str,
         help='Ruta del archivo CSV procesado'
@@ -274,6 +297,22 @@ def main():
     )
     
     args = parser.parse_args()
+
+    cfg = {}
+    if os.path.exists(args.config):
+        with open(args.config, 'r', encoding='utf-8') as f:
+            cfg = yaml.safe_load(f) or {}
+    else:
+        logger.warning(f"No se encontró archivo de configuración: {args.config}")
+
+    logger.info(f"[CFG] Cargado desde: {args.config}")
+    logger.info(f"[CFG] model.test_size={cfg.get('model', {}).get('test_size')}")
+    logger.info(f"[CFG] model.random_state={cfg.get('model', {}).get('random_state')}")
+    logger.info(f"[CFG] model.stratify={cfg.get('model', {}).get('stratify')}")
+    logger.info(f"[CFG] model.class_weight={cfg.get('model', {}).get('class_weight')}")
+    logger.info(f"[CFG] model.default_params={cfg.get('model', {}).get('default_params')}")
+    logger.info(f"[CFG] model.hyperparameters={cfg.get('model', {}).get('hyperparameters')}")
+
     
     # Verificar que el archivo existe
     if not os.path.exists(args.data_path):
@@ -288,18 +327,34 @@ def main():
     X, y, label_encoders, le_target, feature_names = load_and_prepare_data(args.data_path)
     
     # 2. Split train/test
-    logger.info(f"\nDividiendo datos (test_size={args.test_size})...")
+    # Valores efectivos desde YAML (o fallback a CLI)
+    test_size     = cfg.get('model', {}).get('test_size', args.test_size)
+    random_state  = cfg.get('model', {}).get('random_state', args.random_state)
+    stratify_flag = cfg.get('model', {}).get('stratify', True)
+    logger.info(f"\nDividiendo datos (test_size={test_size}, random_state={random_state}, stratify={stratify_flag})...")
+
+
+    # Sobrescribir parámetros con YAML si existen
+    test_size = cfg.get('model', {}).get('test_size', args.test_size)
+    random_state = cfg.get('model', {}).get('random_state', args.random_state)
+    stratify_flag = cfg.get('model', {}).get('stratify', True)
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        stratify=y
+    test_size=test_size,
+    random_state=random_state,
+    stratify=y if stratify_flag else None
     )
     logger.info(f"Train: {X_train.shape}, Test: {X_test.shape}")
     
     # 3. Entrenar modelo
     optimize = not args.no_optimize
-    model, best_params, cv_score = train_model(X_train, y_train, optimize=optimize)
+    model, best_params, cv_score = train_model(
+        X_train, y_train,
+        optimize=optimize,
+        cfg=cfg,
+        random_state=random_state
+    )
     
     # 4. Evaluar modelo
     metrics = evaluate_model(model, X_train, X_test, y_train, y_test, le_target)

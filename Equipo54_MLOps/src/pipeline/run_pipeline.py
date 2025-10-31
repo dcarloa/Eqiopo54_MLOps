@@ -49,9 +49,13 @@ class PipelineRunner:
             test_size (float): Proporción del test set
             random_state (int): Semilla para reproducibilidad
         """
+        
         self.optimize = optimize
         self.test_size = test_size
         self.random_state = random_state
+
+        # Determinar directorio raíz del proyecto (donde está src/)
+        self.project_root = Path(__file__).resolve().parents[2]  # .../Equipo54_MLOps
 
         # Cargar configuración externa (params.yaml) si está presente.
         cfg: dict = {}
@@ -60,6 +64,9 @@ class PipelineRunner:
                 cfg = params_loader.load_params()
             except Exception:
                 logging.getLogger(__name__).warning('No se pudo cargar params vía params.py; se usarán defaults')
+
+        # Guardar cfg para uso posterior
+        self.cfg = cfg
 
         # Rutas de datos (CLI tiene prioridad; si no, usar params.yaml; si no, fallback hardcoded)
         self.raw_path = cfg.get('data', {}).get('raw', 'src/data/raw/student_entry_performance_modified.csv')
@@ -91,10 +98,14 @@ class PipelineRunner:
                 command,
                 check=True,
                 capture_output=True,
-                text=True
+                text=True,
+                cwd=str(self.project_root)  # Ejecutar desde raíz del proyecto
             )
             if result.stdout:
                 print(result.stdout)
+            # <-- agrega esto para ver los logs de logging
+            if result.stderr:
+                print(result.stderr)
             logger.info(f"✅ {step_name} completado exitosamente")
             return True
         except subprocess.CalledProcessError as e:
@@ -129,21 +140,27 @@ class PipelineRunner:
         return self.run_command(command, "Generación de features")
    
     def step_3_train_model(self):
-        """Paso 3: Entrenamiento del modelo"""
         logger.info("\n" + "=" * 70); logger.info("PASO 3: ENTRENAMIENTO DEL MODELO"); logger.info("=" * 70)
         script = 'src/models/train_model.py'
         if not self._exists(script, "Entrenamiento del modelo"):
             return False
+
+        # Usar carpeta fija models/latest/ (sobrescribe en cada corrida)
+        out_dir = Path(self.models_dir) / 'latest'
+        out_dir.mkdir(parents=True, exist_ok=True)
+
         command = [
-            'python', script, self.features_path, self.models_dir,
-            '--test-size', str(self.test_size), '--random-state', str(self.random_state)
+            'python', script,
+            self.features_path,
+            str(out_dir),
+            '--config', str(Path('src/pipeline/params.yaml').resolve())
         ]
         if not self.optimize:
             command.append('--no-optimize')
+
         ok = self.run_command(command, "Entrenamiento del modelo")
-        # ➜ tras entrenar, intenta mostrar métricas
         if ok:
-            self._print_metrics()
+            self._print_metrics(out_dir)  # <- imprime desde esta corrida
         return ok
    
     def step_4_evaluate_model(self):
@@ -222,25 +239,28 @@ class PipelineRunner:
             logger.info("🎉 PIPELINE COMPLETADO EXITOSAMENTE")
         logger.info("=" * 70 + "\n")
 
-    def _print_metrics(self):
+    def _print_metrics(self, run_dir: Path | None = None):
         """
-        Imprime en consola las métricas si existen en models/model_metrics.json
+        Imprime métricas desde model_metrics.json en la carpeta especificada
+        o en models/latest/ si no se especifica.
         """
         try:
-            metrics_path = Path(self.models_dir) / 'model_metrics.json'
+            if run_dir is None:
+                run_dir = Path(self.models_dir) / 'latest'
+
+            metrics_path = Path(run_dir) / 'model_metrics.json'
             if not metrics_path.exists():
                 logger.warning(f"⚠️ No se encontraron métricas en {metrics_path}")
                 return False
-            import json
+
             with open(metrics_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            logger.info("📊 MÉTRICAS DEL MODELO")
-            # Imprime lo esencial; ajusta si quieres más campos:
+
+            logger.info(f"📊 MÉTRICAS DEL MODELO ({metrics_path})")
             train_acc = data.get('train_accuracy')
             test_acc = data.get('test_accuracy') or data.get('accuracy')
             logger.info(f"  • train_accuracy: {train_acc}")
             logger.info(f"  • test_accuracy : {test_acc}")
-            # si existe f1_macro o similares:
             f1 = data.get('f1_macro')
             if f1 is not None:
                 logger.info(f"  • f1_macro      : {f1}")
@@ -311,7 +331,7 @@ Pasos del pipeline:
     parser.add_argument(
         '--test-size',
         type=float,
-        default=0.2,
+        default=0.3,
         help='Proporción del test set (default: 0.2)'
     )
    
